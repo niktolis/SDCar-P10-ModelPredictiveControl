@@ -22,7 +22,7 @@ double dt = 0.05; /*!< Duration of each timestep */
 const double Lf = 2.67;
 
 // Reference velocity
-const double ref_v = 95.0;
+const double ref_v = 100.0;
 // Reference Cross Track Error
 const double ref_cte = 0.0;
 // Refence Orientation Error
@@ -45,13 +45,13 @@ class FG_eval {
  public:
   
   Eigen::VectorXd coeffs;                   /*!< Fitted polynomial coefficients */
-  const double rfc_cte_coeff = 2000.0;      /*!< CTE reference state cost coefficient */
-  const double rfc_epsi_coeff = 2000.0;     /*!< Orientation error reference state cost coefficient */
-  const double rfc_v_coeff = 2.0;           /*!< Velocity reference state cost coefficient */
-  const double aus_delta_coeff = 100.0;     /*!< Steering angle actuation use cost coefficient */
-  const double aus_a_coeff = 100.0;          /*!< Throttle actuation use cost coefficient */
-  const double svgc_delta_coeff = 2500000.0; /*!< Steering angle sequential value gap cost coeffiecient */
-  const double svgc_a_coeff = 25000.0;       /*!< Throttle value sequential gap cost coefficient */
+  const double rfc_cte_coeff = 5000.0;      /*!< CTE reference state cost coefficient */
+  const double rfc_epsi_coeff = 5000.0;     /*!< Orientation error reference state cost coefficient */
+  const double rfc_v_coeff = 1.0;           /*!< Velocity reference state cost coefficient */
+  const double aus_delta_coeff = 3000.0;     /*!< Steering angle actuation use cost coefficient */
+  const double aus_a_coeff = 10.0;          /*!< Throttle actuation use cost coefficient */
+  const double svgc_delta_coeff = 25000000.0; /*!< Steering angle sequential value gap cost coeffiecient */
+  const double svgc_a_coeff = 5.0;       /*!< Throttle value sequential gap cost coefficient */
   
   
   /**

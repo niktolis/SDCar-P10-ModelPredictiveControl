@@ -48,13 +48,13 @@ A coefficient has been assigned to each of the factors described above in the [i
 The values that had been tuned manually to optimize the performance of the simulated car inside the track can be found below:
 
 ```cpp
-const double rfc_cte_coeff = 2000.0;      /*!< CTE reference state cost coefficient */
-const double rfc_epsi_coeff = 2000.0;     /*!< Orientation error reference state cost coefficient */
-const double rfc_v_coeff = 2.0;           /*!< Velocity reference state cost coefficient */
-const double aus_delta_coeff = 100.0;     /*!< Steering angle actuation use cost coefficient */
-const double aus_a_coeff = 100.0;          /*!< Throttle actuation use cost coefficient */
-const double svgc_delta_coeff = 2500000.0; /*!< Steering angle sequential value gap cost coeffiecient */
-const double svgc_a_coeff = 25000.0;       /*!< Throttle value sequential gap cost coefficient */
+const double rfc_cte_coeff = 5000.0;      /*!< CTE reference state cost coefficient */
+const double rfc_epsi_coeff = 5000.0;     /*!< Orientation error reference state cost coefficient */
+const double rfc_v_coeff = 1.0;           /*!< Velocity reference state cost coefficient */
+const double aus_delta_coeff = 3000.0;     /*!< Steering angle actuation use cost coefficient */
+const double aus_a_coeff = 10.0;          /*!< Throttle actuation use cost coefficient */
+const double svgc_delta_coeff = 25000000.0; /*!< Steering angle sequential value gap cost coeffiecient */
+const double svgc_a_coeff = 5.0;       /*!< Throttle value sequential gap cost coefficient */
 ```
 
 ### Timestep Length and Elapsed Duration (N & dt)
@@ -65,7 +65,7 @@ The following values were chosen for the number of timesteps `N` and the timeste
 size_t N = 15;    /*!< Number/Length of timesteps */
 double dt = 0.05; /*!< Duration of each timestep */
 ```
-With such configuration it was obvious also on the projection of the points on the simulator that the prediction horizon is well adapted both in straight lines and cornering with a moderate vehicle speed (~45mph). The timestep resolution remained unchanged throughtout the complete implementation at 50ms and the only change was between the points. The first configuration was with 25 points but this created issues during the steep corners on the prediction so they had to be reduced to a value that it fits better with dynamic behavior of turning. 
+With such configuration it was obvious also on the projection of the points on the simulator that the prediction horizon is well adapted both in straight lines and cornering with a high vehicle speed. The timestep resolution remained unchanged throughtout the complete implementation at 50ms and the only change was between the points. The first configuration was with 25 points but this created issues during the steep corners on the prediction so they had to be reduced to a value that it fits better with dynamic behavior of turning. 
 
 ### Polynomial Fitting and MPC Preprocessing
 
