@@ -77,7 +77,7 @@ void globalToVehicleCoordTransform(double& ptsx, double& ptsy, double px, double
 
 int main() {
   uWS::Hub h;
-
+  
   // MPC is initialized here!
   MPC mpc;
 
@@ -101,6 +101,8 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double delta = j[1]["steering_angle"];
+          double a = j[1]["throttle"];
           
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -108,6 +110,13 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          
+          // Actuation delay
+          const int actuation_delay_ms = 100;
+          
+          // Lf value check description in MPC.cpp line 22
+          const double Lf = 2.67;
+          
           for (size_t i = 0; i < ptsx.size(); i++) {
             globalToVehicleCoordTransform(ptsx[i], ptsy[i], px, py, psi);
           }
@@ -125,15 +134,26 @@ int main() {
           const double cte0 = polyeval(coeffs, x0) - y0;
           const double epsi0 = -atan(coeffs[1]);
           
+          // Take delay into account
+          const double actuation_delay_s = actuation_delay_ms / 1000.0;
+          
+          const double x_ = x0 + (v0 * cos(psi0) * actuation_delay_s);
+          const double y_ = y0 + (v0 * sin(psi0) * actuation_delay_s);
+          const double psi_ = psi0 - (v0 / Lf * delta * actuation_delay_s);
+          const double v_ = v0 + a * actuation_delay_s;
+          const double cte_ = cte0 + (v0 * sin(epsi0) * actuation_delay_s);
+          const double epsi_ = epsi0 - (v0 / Lf * atan(coeffs[1]) * actuation_delay_s);
+          
+          
           // State vector
           Eigen::VectorXd state(6);
-          state << x0, y0, psi0, v0, cte0, epsi0;
+          state << x_, y_, psi_, v_, cte_, epsi_;
           
           // Retrieve the solution from MPC
           auto vars = mpc.Solve(state, coeffs);
           
-          double steer_value = vars[6] / deg2rad(25);
-          double throttle_value = vars[7];
+          double steer_value = vars[0] / deg2rad(25);
+          double throttle_value = vars[1];
           
           cout << "Steering value = " << steer_value << " Throttle = " << throttle_value << endl;
 
@@ -149,7 +169,15 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
-
+          for (size_t i = 2; i < vars.size(); i++) {
+            if (i % 2 == 0) {
+              mpc_x_vals.push_back(vars[i]);
+            }
+            else {
+              mpc_y_vals.push_back(vars[i]);
+            }
+          }
+          
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
@@ -159,11 +187,18 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
+          double step = 2;
+          size_t points = 100;
+          
+          for (size_t i = 0; i < points; i++) {
+            double x = i * step;
+            next_x_vals.push_back(x);
+            next_y_vals.push_back(polyeval(coeffs, x));
+          }
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
-
-
+          
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           // Latency
@@ -175,7 +210,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(0));
+          this_thread::sleep_for(chrono::milliseconds(actuation_delay_ms));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {

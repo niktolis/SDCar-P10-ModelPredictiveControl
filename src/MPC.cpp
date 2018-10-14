@@ -6,7 +6,7 @@
 
 using CppAD::AD;
 
-size_t N = 25;    /*!< Number/Length of timesteps */
+size_t N = 15;    /*!< Number/Length of timesteps */
 double dt = 0.05; /*!< Duration of each timestep */
 
 // This value assumes the model presented in the classroom is used.
@@ -22,7 +22,7 @@ double dt = 0.05; /*!< Duration of each timestep */
 const double Lf = 2.67;
 
 // Reference velocity
-const double ref_v = 40.0;
+const double ref_v = 95.0;
 // Reference Cross Track Error
 const double ref_cte = 0.0;
 // Refence Orientation Error
@@ -44,14 +44,14 @@ size_t a_start = delta_start + N - 1;
 class FG_eval {
  public:
   
-  Eigen::VectorXd coeffs;               /*!< Fitted polynomial coefficients */
-  const double rfc_cte_coeff = 1000.0;     /*!< CTE reference state cost coefficient */
-  const double rfc_epsi_coeff = 1000.0;    /*!< Orientation error reference state cost coefficient */
-  const double rfc_v_coeff = 1.0;       /*!< Velocity reference state cost coefficient */
-  const double aus_delta_coeff = 50.0;   /*!< Steering angle actuation use cost coefficient */
-  const double aus_a_coeff = 50.0;       /*!< Throttle actuation use cost coefficient */
-  const double svgc_delta_coeff = 250000.0;  /*!< Steering angle sequential value gap cost coeffiecient */
-  const double svgc_a_coeff = 5000.0;      /*!< Throttle value sequential gap cost coefficient */
+  Eigen::VectorXd coeffs;                   /*!< Fitted polynomial coefficients */
+  const double rfc_cte_coeff = 2000.0;      /*!< CTE reference state cost coefficient */
+  const double rfc_epsi_coeff = 2000.0;     /*!< Orientation error reference state cost coefficient */
+  const double rfc_v_coeff = 2.0;           /*!< Velocity reference state cost coefficient */
+  const double aus_delta_coeff = 100.0;     /*!< Steering angle actuation use cost coefficient */
+  const double aus_a_coeff = 100.0;          /*!< Throttle actuation use cost coefficient */
+  const double svgc_delta_coeff = 2500000.0; /*!< Steering angle sequential value gap cost coeffiecient */
+  const double svgc_a_coeff = 25000.0;       /*!< Throttle value sequential gap cost coefficient */
   
   
   /**
@@ -268,13 +268,17 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
   std::cout << "Steering Solution = " << solution.x[delta_start] << std::endl;
-  // TODO: Return the first actuator values. The variables can be accessed with
-  // `solution.x[i]`.
-  //
-  // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
-  // creates a 2 element double vector.
-  return {solution.x[x_start + 1], solution.x[y_start + 1],
-          solution.x[psi_start + 1], solution.x[v_start + 1],
-          solution.x[cte_start + 1], solution.x[epsi_start + 1],
-          solution.x[delta_start], solution.x[a_start]};
+  
+  vector<double> result;
+  
+  result.push_back(solution.x[delta_start]);
+  result.push_back(solution.x[a_start]);
+  
+  for (size_t i = 0; i < N - 2; i++)
+  {
+    result.push_back(solution.x[x_start + i + 1]);
+    result.push_back(solution.x[y_start + i + 1]);
+  }
+  
+  return result;
 }
