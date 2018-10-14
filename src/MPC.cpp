@@ -45,13 +45,13 @@ class FG_eval {
  public:
   
   Eigen::VectorXd coeffs;               /*!< Fitted polynomial coefficients */
-  const double rfc_cte_coeff = 1.0;     /*!< CTE reference state cost coefficient */
-  const double rfc_epsi_coeff = 1.0;    /*!< Orientation error reference state cost coefficient */
+  const double rfc_cte_coeff = 1000.0;     /*!< CTE reference state cost coefficient */
+  const double rfc_epsi_coeff = 1000.0;    /*!< Orientation error reference state cost coefficient */
   const double rfc_v_coeff = 1.0;       /*!< Velocity reference state cost coefficient */
-  const double aus_delta_coeff = 1.0;   /*!< Steering angle actuation use cost coefficient */
-  const double aus_a_coeff = 1.0;       /*!< Throttle actuation use cost coefficient */
-  const double svgc_delta_coeff = 1.0;  /*!< Steering angle sequential value gap cost coeffiecient */
-  const double svgc_a_coeff = 1.0;      /*!< Throttle value sequential gap cost coefficient */
+  const double aus_delta_coeff = 50.0;   /*!< Steering angle actuation use cost coefficient */
+  const double aus_a_coeff = 50.0;       /*!< Throttle actuation use cost coefficient */
+  const double svgc_delta_coeff = 250000.0;  /*!< Steering angle sequential value gap cost coeffiecient */
+  const double svgc_a_coeff = 5000.0;      /*!< Throttle value sequential gap cost coefficient */
   
   
   /**
@@ -83,7 +83,7 @@ class FG_eval {
     
     // Actuation Use Cost
     // The part of the cost based on the use of the actuators (steering angle, throttle)
-    for (int t = 0; t < N; t++) {
+    for (int t = 0; t < N - 1; t++) {
       fg[0] += aus_delta_coeff * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += aus_a_coeff * CppAD::pow(vars[a_start + t], 2);
     }
@@ -132,9 +132,9 @@ class FG_eval {
       AD<double> a0 = vars[a_start + t - 1];
       
       // Reference trajectory polynomial at time t
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0;
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
       // Desired psi at time t
-      AD<double> psides0 = CppAD::atan(coeffs[1]);
+      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));
       
       // Model equations
       // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
@@ -147,10 +147,10 @@ class FG_eval {
       // value which is 0
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+      fg[1 + psi_start + t] = psi1 - (psi0 - v0 / Lf * delta0 * dt);
       fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
       fg[1 + cte_start + t] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-      fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+      fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) - v0 / Lf * delta0 * dt);
     }
   }
 };
@@ -175,10 +175,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // Number of independent variables
   // N timesteps == N - 1 actuations
-  size_t n_vars = N * 6 + (N - 1) * 2;
+  const size_t n_vars = N * 6 + (N - 1) * 2;
   
   // Number of constraints
-  size_t n_constraints = N * 6;
+  const size_t n_constraints = N * 6;
 
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
@@ -202,15 +202,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Set all non-actuators upper and lower limits
   // to the max negative and positive values
   for (int i = 0; i < delta_start; i++) {
-    vars_lowerbound[i] = numeric_limits<double>::min();
-    vars_upperbound[i] = numeric_limits<double>::max();
+    vars_lowerbound[i] = -1.0e19;
+    vars_upperbound[i] = 1.0e19;
   }
   
   // The upper and lower limits of delata are set to -25 and 25
   // degrees. This shall be converted to radians.
   for (int i = delta_start; i < a_start; i++) {
-    vars_lowerbound[i] = min_delta * 180.0 / M_PI;
-    vars_upperbound[i] = max_delta * 180.0 / M_PI;
+    vars_lowerbound[i] = min_delta * M_PI / 180.0;
+    vars_upperbound[i] = max_delta * M_PI / 180.0;
   }
   
   // Acceleration/decceleration upper and lower limits.
@@ -267,7 +267,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // Cost
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
-
+  std::cout << "Steering Solution = " << solution.x[delta_start] << std::endl;
   // TODO: Return the first actuator values. The variables can be accessed with
   // `solution.x[i]`.
   //
