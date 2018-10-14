@@ -7,6 +7,12 @@
 using namespace std;
 
 class MPC {
+  
+private:
+  const double max_delta = 25.0;    /*!< Maximum steering angle in degrees */
+  const double min_delta = -25.0;   /*!< Minimum steering angle in degrees */
+  const double max_throttle = 1.0;  /*!< Maximum throttle */
+  const double min_throttle = -1.0; /*!< Minimum throttle */
  public:
   MPC();
 
