@@ -5,7 +5,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 ## Overview
 
-The prokect contains the implementation of a Model Predictive Controller ([MPC](https://en.wikipedia.org/wiki/Model_predictive_control)) for the Udacity Self Driving Car Nanodegree program. The target of the controller is to adjust online the two actuation values of a simulated car [`delta`, `a` ] which stand for steering angle and throttle respectively.
+The project contains the implementation of a Model Predictive Controller ([MPC](https://en.wikipedia.org/wiki/Model_predictive_control)) for the Udacity Self Driving Car Nanodegree program. The target of the controller is to adjust online the two actuation values of a simulated car `[delta, a]` which stand for steering angle and throttle respectively.
 
 ## Reflection
 
