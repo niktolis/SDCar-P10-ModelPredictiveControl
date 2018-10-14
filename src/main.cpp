@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "MPC.h"
 #include "json.hpp"
+#include "matplotlibcpp.h"
 
 // for convenience
 using json = nlohmann::json;
@@ -65,6 +66,15 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+void globalToVehicleCoordTransform(double& ptsx, double& ptsy, double px, double py, double psi)
+{
+  double dx = ptsx - px;
+  double dy = ptsy - py;
+  
+  ptsx = cos(-psi) * dx - sin(-psi) * dy;
+  ptsy = sin(-psi) * dx + cos(-psi) * dy;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -91,20 +101,32 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+          
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
+          for (size_t i = 0; i < ptsx.size(); i++) {
+            globalToVehicleCoordTransform(ptsx[i], ptsy[i], px, py, psi);
+          }
+          
+          Eigen::Map<Eigen::VectorXd> ptsx_t(ptsx.data(), ptsx.size());
+          Eigen::Map<Eigen::VectorXd> ptsy_t(ptsy.data(), ptsy.size());
+          
+          Eigen::VectorXd coeffs = polyfit(ptsx_t, ptsy_t, 3);
+          
+          
+          
+          
           double steer_value;
           double throttle_value;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
